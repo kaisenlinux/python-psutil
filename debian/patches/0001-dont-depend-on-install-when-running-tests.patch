@@ -1,0 +1,74 @@
+From: Sandro Tosi <morph@debian.org>
+Date: Sun, 10 Apr 2016 13:13:43 +0100
+Subject: dont depend on install when running tests
+
+---
+ Makefile | 12 ------------
+ 1 file changed, 12 deletions(-)
+
+--- a/Makefile
++++ b/Makefile
+@@ -119,63 +119,48 @@ setup-dev-env:  ## Install GIT hooks, pi
+ # ===================================================================
+ 
+ test:  ## Run all tests.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS)
+ 
+ test-parallel:  ## Run all tests in parallel.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) --parallel
+ 
+ test-process:  ## Run process-related API tests.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_process.py
+ 
+ test-system:  ## Run system-related API tests.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_system.py
+ 
+ test-misc:  ## Run miscellaneous tests.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_misc.py
+ 
+ test-testutils:  ## Run test utils tests.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_testutils.py
+ 
+ test-unicode:  ## Test APIs dealing with strings.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_unicode.py
+ 
+ test-contracts:  ## APIs sanity tests.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_contracts.py
+ 
+ test-connections:  ## Test net_connections() and Process.connections().
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_connections.py
+ 
+ test-posix:  ## POSIX specific tests.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_posix.py
+ 
+ test-platform:  ## Run specific platform tests only.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_`$(PYTHON) -c 'import psutil; print([x.lower() for x in ("LINUX", "BSD", "OSX", "SUNOS", "WINDOWS", "AIX") if getattr(psutil, x)][0])'`.py
+ 
+ test-memleaks:  ## Memory leak tests.
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_memleaks.py
+ 
+ test-by-name:  ## e.g. make test-by-name ARGS=psutil.tests.test_system.TestSystemAPIs
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS)
+ 
+ test-failed:  ## Re-run tests which failed on last run
+-	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) --last-failed
+ 
+ test-coverage:  ## Run test coverage.
+-	${MAKE} build
+ 	# Note: coverage options are controlled by .coveragerc file
+ 	rm -rf .coverage htmlcov
+ 	$(TEST_PREFIX) $(PYTHON) -m coverage run $(TSCRIPT)

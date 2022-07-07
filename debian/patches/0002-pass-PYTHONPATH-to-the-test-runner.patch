@@ -1,0 +1,27 @@
+From: Sandro Tosi <morph@debian.org>
+Date: Sun, 10 Apr 2016 13:17:47 +0100
+Subject: pass PYTHONPATH to the test runner
+
+---
+ Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/Makefile
++++ b/Makefile
+@@ -4,6 +4,7 @@
+ 
+ # Configurable.
+ PYTHON = python3
++PYTHONPATH = .
+ ARGS =
+ TSCRIPT = psutil/tests/runner.py
+ 
+@@ -40,7 +41,7 @@ BUILD_OPTS = `$(PYTHON) -c \
+ # In not in a virtualenv, add --user options for install commands.
+ INSTALL_OPTS = `$(PYTHON) -c \
+ 	"import sys; print('' if hasattr(sys, 'real_prefix') else '--user')"`
+-TEST_PREFIX = PYTHONWARNINGS=always PSUTIL_DEBUG=1
++TEST_PREFIX = PYTHONWARNINGS=always PSUTIL_DEBUG=1 PYTHONPATH=$(PYTHONPATH)
+ 
+ all: help
+ 

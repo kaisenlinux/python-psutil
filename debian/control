@@ -1,0 +1,48 @@
+Source: python-psutil
+Section: python
+Priority: optional
+XSBC-Original-Maintainer: Sandro Tosi <morph@debian.org>
+Maintainer: Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>
+Build-Depends: debhelper-compat (= 13),
+               dh-python,
+               procps,
+               python3-all-dev,
+               python3-setuptools,
+               python3-sphinx,
+               python3-sphinx-rtd-theme,
+Standards-Version: 4.6.1
+Homepage: https://github.com/giampaolo/psutil
+Vcs-Git: https://gitlab.com/kaisenlinux/packages/python-psutil.git
+Vcs-Browser: https://gitlab.com/kaisenlinux/packages/python-psutil
+Testsuite: autopkgtest-pkg-python
+
+Package: python3-psutil
+Architecture: any
+Depends: ${misc:Depends},
+         ${python3:Depends},
+         ${shlibs:Depends},
+Suggests: python-psutil-doc,
+Description: module providing convenience functions for managing processes (Python3)
+ psutil is a module providing an interface for retrieving information on
+ running processes and system utilization (CPU, memory) in a portable way
+ by using Python, implementing many functionalities offered by tools like
+ ps, top and Windows task manager.
+ .
+ It currently supports Linux, OS X, FreeBSD and Windows.
+ .
+ This package contains the Python 3 version of psutil.
+
+Package: python-psutil-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends},
+         ${sphinxdoc:Depends},
+Description: module providing convenience functions for managing processes (doc)
+ psutil is a module providing an interface for retrieving information on
+ running processes and system utilization (CPU, memory) in a portable way
+ by using Python, implementing many functionalities offered by tools like
+ ps, top and Windows task manager.
+ .
+ It currently supports Linux, OS X, FreeBSD and Windows.
+ .
+ This package contains the documentation for psutil.
