@@ -83,7 +83,7 @@ def get_changes():
     block = []
 
     # eliminate the part preceding the first block
-    for i, line in enumerate(lines):
+    for line in lines:
         line = lines.pop(0)
         if line.startswith('===='):
             break
@@ -92,10 +92,8 @@ def get_changes():
     for i, line in enumerate(lines):
         line = lines.pop(0)
         line = line.rstrip()
-        if re.match(r"^- \d+_: ", line):
-            num, _, rest = line.partition(': ')
-            num = ''.join([x for x in num if x.isdigit()])
-            line = "- #%s: %s" % (num, rest)
+        if re.match(r"^- \d+_", line):
+            line = re.sub(r"^- (\d+)_", r"- #\1", line)
 
         if line.startswith('===='):
             break

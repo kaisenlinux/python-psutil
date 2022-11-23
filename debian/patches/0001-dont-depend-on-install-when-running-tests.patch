@@ -8,7 +8,7 @@ Subject: dont depend on install when running tests
 
 --- a/Makefile
 +++ b/Makefile
-@@ -119,63 +119,48 @@ setup-dev-env:  ## Install GIT hooks, pi
+@@ -122,63 +122,48 @@ setup-dev-env:  ## Install GIT hooks, pi
  # ===================================================================
  
  test:  ## Run all tests.

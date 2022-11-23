@@ -16,12 +16,12 @@ Subject: pass PYTHONPATH to the test runner
  ARGS =
  TSCRIPT = psutil/tests/runner.py
  
-@@ -40,7 +41,7 @@ BUILD_OPTS = `$(PYTHON) -c \
+@@ -45,7 +46,7 @@ BUILD_OPTS = `$(PYTHON) -c \
  # In not in a virtualenv, add --user options for install commands.
  INSTALL_OPTS = `$(PYTHON) -c \
- 	"import sys; print('' if hasattr(sys, 'real_prefix') else '--user')"`
+ 	"import sys; print('' if hasattr(sys, 'real_prefix') or hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix else '--user')"`
 -TEST_PREFIX = PYTHONWARNINGS=always PSUTIL_DEBUG=1
 +TEST_PREFIX = PYTHONWARNINGS=always PSUTIL_DEBUG=1 PYTHONPATH=$(PYTHONPATH)
  
- all: help
- 
+ # if make is invoked with no arg, default to `make help`
+ .DEFAULT_GOAL := help

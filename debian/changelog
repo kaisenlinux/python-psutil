@@ -1,3 +1,11 @@
+python-psutil (5.9.2-1kaisen) kaisen-packages; urgency=medium
+
+  * Import the 5.9.2 version
+  * Rebuild for GNS 2.2.35.1
+  * Update quilt patches
+
+ -- Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>  Wed, 23 Nov 2022 14:50:51 +0100
+
 python-psutil (5.9.1-1kaisen) kaisen-packages; urgency=medium
 
   * New upstream release

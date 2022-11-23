@@ -9,14 +9,19 @@ TSCRIPT = psutil/tests/runner.py
 
 # Internal.
 DEPS = \
-	autoflake \
+	git+https://github.com/PyCQA/autoflake.git \
 	autopep8 \
 	check-manifest \
 	concurrencytest \
 	coverage \
 	flake8 \
+	flake8-blind-except \
+	flake8-bugbear \
+	flake8-debugger \
 	flake8-print \
+	flake8-quotes \
 	isort \
+	pep8-naming \
 	pyperf \
 	pypinfo \
 	requests \
@@ -39,10 +44,11 @@ BUILD_OPTS = `$(PYTHON) -c \
 	print('--parallel %s' % cpus if cpus > 1 else '')"`
 # In not in a virtualenv, add --user options for install commands.
 INSTALL_OPTS = `$(PYTHON) -c \
-	"import sys; print('' if hasattr(sys, 'real_prefix') else '--user')"`
+	"import sys; print('' if hasattr(sys, 'real_prefix') or hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix else '--user')"`
 TEST_PREFIX = PYTHONWARNINGS=always PSUTIL_DEBUG=1
 
-all: help
+# if make is invoked with no arg, default to `make help`
+.DEFAULT_GOAL := help
 
 # ===================================================================
 # Install
@@ -70,17 +76,14 @@ clean:  ## Remove all build files.
 		docs/_build/ \
 		htmlcov/
 
-_:
-
-build: _  ## Compile (in parallel) without installing.
+.PHONY: build
+build:  ## Compile (in parallel) without installing.
 	@# "build_ext -i" copies compiled *.so files in ./psutil directory in order
 	@# to allow "import psutil" when using the interactive interpreter from
 	@# within  this directory.
 	PYTHONWARNINGS=all $(PYTHON) setup.py build_ext -i $(BUILD_OPTS)
 
 install:  ## Install this package as current user in "edit" mode.
-	# make sure setuptools is installed (needed for 'develop' / edit mode)
-	$(PYTHON) -c "import setuptools"
 	${MAKE} build
 	PYTHONWARNINGS=all $(PYTHON) setup.py develop $(INSTALL_OPTS)
 	$(PYTHON) -c "import psutil"  # make sure it actually worked
@@ -188,32 +191,32 @@ test-coverage:  ## Run test coverage.
 # Linters
 # ===================================================================
 
-check-flake8:  ## Run flake8 linter.
+flake8:  ## Run flake8 linter.
 	@git ls-files '*.py' | xargs $(PYTHON) -m flake8 --config=.flake8
 
-check-imports:  ## Run isort linter.
+isort:  ## Run isort linter.
 	@git ls-files '*.py' | xargs $(PYTHON) -m isort --settings=.isort.cfg --check-only
 
-check-c-code:  ## Run C linter.
+c-linter:  ## Run C linter.
 	@git ls-files '*.c' '*.h' | xargs $(PYTHON) scripts/internal/clinter.py
 
-check-all:  ## Run all linters
-	${MAKE} check-flake8
-	${MAKE} check-imports
-	${MAKE} check-c-code
+lint-all:  ## Run all linters
+	${MAKE} flake8
+	${MAKE} isort
+	${MAKE} c-linter
 
 # ===================================================================
 # Fixers
 # ===================================================================
 
 fix-flake8:  ## Run autopep8, fix some Python flake8 / pep8 issues.
-	git ls-files | grep \\.py$ | xargs $(PYTHON) -m autopep8 --in-place --jobs 0 --global-config=.flake8
-	git ls-files | grep \\.py$ | xargs $(PYTHON) -m autoflake --in-place --remove-all-unused-imports --remove-unused-variables
+	@git ls-files '*.py' | xargs $(PYTHON) -m autopep8 --in-place --jobs 0 --global-config=.flake8
+	@git ls-files '*.py' | xargs $(PYTHON) -m autoflake --in-place --jobs 0 --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys
 
 fix-imports:  ## Fix imports with isort.
 	@git ls-files '*.py' | xargs $(PYTHON) -m isort --settings=.isort.cfg
 
-fix-all:
+fix-all:  ## Run all code fixers.
 	${MAKE} fix-flake8
 	${MAKE} fix-imports
 
@@ -267,11 +270,8 @@ check-sdist:  ## Create source distribution and checks its sanity (MANIFEST)
 	${MAKE} clean
 	$(PYTHON) -m virtualenv --clear --no-wheel --quiet build/venv
 	PYTHONWARNINGS=all $(PYTHON) setup.py sdist
-	build/venv/bin/python -m pip install -v --isolated --quiet dist/*.tar.gz
-	build/venv/bin/python -c "import os; os.chdir('build/venv'); import psutil"
-
-tidelift-relnotes:  ## upload release notes from HISTORY
-	$(PYTHON) scripts/internal/tidelift.py
+	build/venv/local/bin/python -m pip install -v --isolated --quiet dist/*.tar.gz
+	build/venv/local/bin/python -c "import os; os.chdir('build/venv'); import psutil"
 
 pre-release:  ## Check if we're ready to produce a new release.
 	${MAKE} check-sdist
@@ -293,10 +293,8 @@ pre-release:  ## Check if we're ready to produce a new release.
 		assert 'XXXX' not in history, 'XXXX in HISTORY.rst';"
 
 release:  ## Create a release (down/uploads tar.gz, wheels, git tag release).
-	$(PYTHON) -c "import subprocess, sys; out = subprocess.check_output('git diff --quiet && git diff --cached --quiet', shell=True).strip(); sys.exit('there are uncommitted changes:\n%s' % out) if out else 0 ;"
 	$(PYTHON) -m twine upload dist/*  # upload tar.gz and Windows wheels on PyPI
 	${MAKE} git-tag-release
-	${MAKE} tidelift-relnotes
 
 check-manifest:  ## Inspect MANIFEST.in file.
 	$(PYTHON) -m check_manifest -v $(ARGS)
