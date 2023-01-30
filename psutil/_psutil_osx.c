@@ -405,18 +405,24 @@ psutil_proc_cmdline(PyObject *self, PyObject *args) {
 
 /*
  * Return process environment as a Python string.
+ * On Big Sur this function returns an empty string unless:
+ * * kernel is DEVELOPMENT || DEBUG
+ * * target process is same as current_proc()
+ * * target process is not cs_restricted
+ * * SIP is off
+ * * caller has an entitlement
  */
 static PyObject *
 psutil_proc_environ(PyObject *self, PyObject *args) {
     pid_t pid;
-    PyObject *py_retdict = NULL;
+    PyObject *py_str = NULL;
 
     if (! PyArg_ParseTuple(args, _Py_PARSE_PID, &pid))
         return NULL;
 
     // get the environment block, defined in arch/osx/process_info.c
-    py_retdict = psutil_get_environ(pid);
-    return py_retdict;
+    py_str = psutil_get_environ(pid);
+    return py_str;
 }
 
 
@@ -830,6 +836,52 @@ error:
 }
 
 
+static PyObject *
+psutil_disk_usage_used(PyObject *self, PyObject *args) {
+    PyObject *py_default_value;
+    PyObject *py_mount_point_bytes = NULL;
+    char* mount_point;
+
+#if PY_MAJOR_VERSION >= 3
+    if (!PyArg_ParseTuple(args, "O&O", PyUnicode_FSConverter, &py_mount_point_bytes, &py_default_value)) {
+        return NULL;
+    }
+    mount_point = PyBytes_AsString(py_mount_point_bytes);
+    if (NULL == mount_point) {
+        Py_XDECREF(py_mount_point_bytes);
+        return NULL;
+    }
+#else
+    if (!PyArg_ParseTuple(args, "sO", &mount_point, &py_default_value)) {
+        return NULL;
+    }
+#endif
+
+#ifdef ATTR_VOL_SPACEUSED
+    /* Call getattrlist(ATTR_VOL_SPACEUSED) to get used space info. */
+    int ret;
+    struct {
+        uint32_t size;
+        uint64_t spaceused;
+    } __attribute__((aligned(4), packed)) attrbuf = {0};
+    struct attrlist attrs = {0};
+
+    attrs.bitmapcount = ATTR_BIT_MAP_COUNT;
+    attrs.volattr = ATTR_VOL_INFO | ATTR_VOL_SPACEUSED;
+    Py_BEGIN_ALLOW_THREADS
+    ret = getattrlist(mount_point, &attrs, &attrbuf, sizeof(attrbuf), 0);
+    Py_END_ALLOW_THREADS
+    if (ret == 0) {
+        Py_XDECREF(py_mount_point_bytes);
+        return PyLong_FromUnsignedLongLong(attrbuf.spaceused);
+    }
+    psutil_debug("getattrlist(ATTR_VOL_SPACEUSED) failed, fall-back to default value");
+#endif
+    Py_XDECREF(py_mount_point_bytes);
+    Py_INCREF(py_default_value);
+    return py_default_value;
+}
+
 /*
  * Return process threads
  */
@@ -955,6 +1007,10 @@ psutil_proc_open_files(PyObject *self, PyObject *args) {
     if (! PyArg_ParseTuple(args, _Py_PARSE_PID, &pid))
         goto error;
 
+    // see: https://github.com/giampaolo/psutil/issues/2116
+    if (pid == 0)
+        return py_retlist;
+
     fds_pointer = psutil_proc_list_fds(pid, &num_fds);
     if (fds_pointer == NULL)
         goto error;
@@ -1046,6 +1102,10 @@ psutil_proc_connections(PyObject *self, PyObject *args) {
                            &py_type_filter)) {
         goto error;
     }
+
+    // see: https://github.com/giampaolo/psutil/issues/2116
+    if (pid == 0)
+        return py_retlist;
 
     if (!PySequence_Check(py_af_filter) || !PySequence_Check(py_type_filter)) {
         PyErr_SetString(PyExc_TypeError, "arg 2 or 3 is not a sequence");
@@ -1667,6 +1727,7 @@ static PyMethodDef mod_methods[] = {
     {"cpu_times", psutil_cpu_times, METH_VARARGS},
     {"disk_io_counters", psutil_disk_io_counters, METH_VARARGS},
     {"disk_partitions", psutil_disk_partitions, METH_VARARGS},
+    {"disk_usage_used", psutil_disk_usage_used, METH_VARARGS},
     {"net_io_counters", psutil_net_io_counters, METH_VARARGS},
     {"per_cpu_times", psutil_per_cpu_times, METH_VARARGS},
     {"pids", psutil_pids, METH_VARARGS},

@@ -142,6 +142,7 @@ Supporters
       <a href="https://github.com/PySimpleGUI"><img height="40" width="40" title="PySimpleGUI" src="https://avatars.githubusercontent.com/u/46163555?v=4" /></a>
       <a href="https://github.com/u93"><img height="40" width="40" title="Eugenio E Breijo" src="https://avatars.githubusercontent.com/u/16807302?v=4" /></a>
       <a href="https://github.com/guilt"><img height="40" width="40" title="Karthik Kumar Viswanathan" src="https://avatars.githubusercontent.com/u/195178?v=4" /></a>
+      <a href="https://github.com/eallrich"><img height="40" width="40" title="Evan Allrich" src="https://avatars.githubusercontent.com/u/17393?v=4" /></a>
 
     </div>
     <sup><a href="https://github.com/sponsors/giampaolo">add your avatar</a></sup>
@@ -220,7 +221,7 @@ Disks
 
     >>> psutil.disk_partitions()
     [sdiskpart(device='/dev/sda1', mountpoint='/', fstype='ext4', opts='rw,nosuid', maxfile=255, maxpath=4096),
-     sdiskpart(device='/dev/sda2', mountpoint='/home', fstype='ext, opts='rw', maxfile=255, maxpath=4096)]
+     sdiskpart(device='/dev/sda2', mountpoint='/home', fstype='ext', opts='rw', maxfile=255, maxpath=4096)]
     >>>
     >>> psutil.disk_usage('/')
     sdiskusage(total=21378641920, used=4809781248, free=15482871808, percent=22.5)
@@ -252,8 +253,8 @@ Network
                snicaddr(family=<AddressFamily.AF_LINK: 17>, address='c4:85:08:45:06:41', netmask=None, broadcast='ff:ff:ff:ff:ff:ff', ptp=None)]}
     >>>
     >>> psutil.net_if_stats()
-    {'lo': snicstats(isup=True, duplex=<NicDuplex.NIC_DUPLEX_UNKNOWN: 0>, speed=0, mtu=65536),
-     'wlan0': snicstats(isup=True, duplex=<NicDuplex.NIC_DUPLEX_FULL: 2>, speed=100, mtu=1500)}
+    {'lo': snicstats(isup=True, duplex=<NicDuplex.NIC_DUPLEX_UNKNOWN: 0>, speed=0, mtu=65536, flags='up,loopback,running'),
+     'wlan0': snicstats(isup=True, duplex=<NicDuplex.NIC_DUPLEX_FULL: 2>, speed=100, mtu=1500, flags='up,broadcast,running,multicast')}
     >>>
 
 Sensors
