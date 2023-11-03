@@ -10,7 +10,7 @@ Build-Depends: debhelper-compat (= 13),
                python3-setuptools,
                python3-sphinx,
                python3-sphinx-rtd-theme,
-Standards-Version: 4.6.1
+Standards-Version: 4.6.2
 Homepage: https://github.com/giampaolo/psutil
 Vcs-Git: https://gitlab.com/kaisenlinux/packages/python-psutil.git
 Vcs-Browser: https://gitlab.com/kaisenlinux/packages/python-psutil

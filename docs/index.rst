@@ -268,13 +268,13 @@ CPU
 .. function:: cpu_freq(percpu=False)
 
     Return CPU frequency as a named tuple including *current*, *min* and *max*
-    frequencies expressed in Mhz.
-    On Linux *current* frequency reports the real-time value, on all other
-    platforms this usually represents the nominal "fixed" value (never changing).
-    If *percpu* is ``True`` and the system supports per-cpu frequency
-    retrieval (Linux only) a list of frequencies is returned for each CPU,
-    if not, a list with a single element is returned.
-    If *min* and *max* cannot be determined they are set to ``0.0``.
+    frequencies expressed in Mhz. On Linux *current* frequency reports the
+    real-time value, on all other platforms this usually represents the
+    nominal "fixed" value (never changing). If *percpu* is ``True`` and the
+    system supports per-cpu frequency retrieval (Linux and FreeBSD), a list of
+    frequencies is returned for each CPU, if not, a list with a single element
+    is returned. If *min* and *max* cannot be determined they are set to
+    ``0.0``.
 
     Example (Linux):
 
@@ -289,7 +289,8 @@ CPU
         scpufreq(current=1703.609, min=800.0, max=3500.0),
         scpufreq(current=1754.289, min=800.0, max=3500.0)]
 
-    Availability: Linux, macOS, Windows, FreeBSD, OpenBSD
+    Availability: Linux, macOS, Windows, FreeBSD, OpenBSD. *percpu* only
+    supported on Linux and FreeBSD.
 
     .. versionadded:: 5.1.0
 
@@ -333,14 +334,17 @@ Memory
 .. function:: virtual_memory()
 
   Return statistics about system memory usage as a named tuple including the
-  following fields, expressed in bytes. Main metrics:
+  following fields, expressed in bytes.
+
+  Main metrics:
 
   - **total**: total physical memory (exclusive swap).
   - **available**: the memory that can be given instantly to processes without
     the system going into swap.
-    This is calculated by summing different memory values depending on the
-    platform and it is supposed to be used to monitor actual memory usage in a
-    cross platform fashion.
+    This is calculated by summing different memory metrics that vary depending
+    on the platform. It is supposed to be used to monitor actual memory usage
+    in a cross platform fashion.
+  - **percent**: the percentage usage calculated as ``(total - available) / total * 100``.
 
   Other metrics:
 
@@ -368,7 +372,8 @@ Memory
   human readable form.
 
   .. note:: if you just want to know how much physical memory is left in a
-    cross platform fashion simply rely on the **available** field.
+    cross platform fashion simply rely on **available** and **percent**
+    fields.
 
   >>> import psutil
   >>> mem = psutil.virtual_memory()
@@ -505,7 +510,7 @@ Disks
   numbers will always be increasing or remain the same, but never decrease.
   ``disk_io_counters.cache_clear()`` can be used to invalidate the *nowrap*
   cache.
-  On Windows it may be ncessary to issue ``diskperf -y`` command from cmd.exe
+  On Windows it may be necessary to issue ``diskperf -y`` command from cmd.exe
   first in order to enable IO counters.
   On diskless machines this function will return ``None`` or ``{}`` if
   *perdisk* is ``True``.
@@ -658,19 +663,18 @@ Network
     (Solaris) UNIX sockets are not supported.
 
   .. note::
-     (Linux, FreeBSD) "raddr" field for UNIX sockets is always set to "".
-     This is a limitation of the OS.
-
-  .. note::
-     (OpenBSD) "laddr" and "raddr" fields for UNIX sockets are always set to
-     "". This is a limitation of the OS.
+     (Linux, FreeBSD, OpenBSD) *raddr* field for UNIX sockets is always set to
+     ``""`` (empty string). This is a limitation of the OS.
 
   .. versionadded:: 2.1.0
 
   .. versionchanged:: 5.3.0 : socket "fd" is now set for real instead of being
      ``-1``.
 
-  .. versionchanged:: 5.3.0 : "laddr" and "raddr" are named tuples.
+  .. versionchanged:: 5.3.0 : *laddr* and *raddr* are named tuples.
+
+  .. versionchanged:: 5.9.5 : OpenBSD: retrieve *laddr* path for AF_UNIX
+    sockets (before it was an empty string).
 
 .. function:: net_if_addrs()
 
@@ -1176,9 +1180,10 @@ Process class
 
   .. method:: exe()
 
-    The process executable as an absolute path.
-    On some systems this may also be an empty string.
-    The return value is cached after first call.
+    The process executable as an absolute path. On some systems, if exe cannot
+    be determined for some internal reason (e.g. system process or path no
+    longer exists), this may be an empty string. The return value is cached
+    after first call.
 
     >>> import psutil
     >>> psutil.Process().exe()
@@ -1277,7 +1282,9 @@ Process class
 
   .. method:: cwd()
 
-    The process current working directory as an absolute path.
+    The process current working directory as an absolute path. If cwd cannot be
+    determined for some internal reason (e.g. system process or directiory no
+    longer exists) it may return an empty string.
 
     .. versionchanged:: 5.6.4 added support for NetBSD
 
@@ -1942,18 +1949,18 @@ Process class
       (Solaris) UNIX sockets are not supported.
 
     .. note::
-       (Linux, FreeBSD) "raddr" field for UNIX sockets is always set to "".
+       (Linux, FreeBSD) *raddr* field for UNIX sockets is always set to "".
        This is a limitation of the OS.
 
     .. note::
-       (OpenBSD) "laddr" and "raddr" fields for UNIX sockets are always set to
+       (OpenBSD) *laddr* and *raddr* fields for UNIX sockets are always set to
        "". This is a limitation of the OS.
 
     .. note::
       (AIX) :class:`psutil.AccessDenied` is always raised unless running
       as root (lsof does the same).
 
-    .. versionchanged:: 5.3.0 : "laddr" and "raddr" are named tuples.
+    .. versionchanged:: 5.3.0 : *laddr* and *raddr* are named tuples.
 
   .. method:: is_running()
 
@@ -2630,6 +2637,18 @@ Supported Python versions are 2.7, 3.4+ and PyPy3.
 Timeline
 ========
 
+- 2023-04-17:
+  `5.9.5 <https://pypi.org/project/psutil/5.9.5/#files>`__ -
+  `what's new <https://github.com/giampaolo/psutil/blob/master/HISTORY.rst#595>`__ -
+  `diff <https://github.com/giampaolo/psutil/compare/release-5.9.4...release-5.9.5#files_bucket>`__
+- 2022-11-07:
+  `5.9.4 <https://pypi.org/project/psutil/5.9.4/#files>`__ -
+  `what's new <https://github.com/giampaolo/psutil/blob/master/HISTORY.rst#594>`__ -
+  `diff <https://github.com/giampaolo/psutil/compare/release-5.9.3...release-5.9.4#files_bucket>`__
+- 2022-10-18:
+  `5.9.3 <https://pypi.org/project/psutil/5.9.3/#files>`__ -
+  `what's new <https://github.com/giampaolo/psutil/blob/master/HISTORY.rst#593>`__ -
+  `diff <https://github.com/giampaolo/psutil/compare/release-5.9.2...release-5.9.3#files_bucket>`__
 - 2022-09-04:
   `5.9.2 <https://pypi.org/project/psutil/5.9.2/#files>`__ -
   `what's new <https://github.com/giampaolo/psutil/blob/master/HISTORY.rst#592>`__ -
@@ -2646,7 +2665,7 @@ Timeline
   `5.8.0 <https://pypi.org/project/psutil/5.8.0/#files>`__ -
   `what's new <https://github.com/giampaolo/psutil/blob/master/HISTORY.rst#580>`__ -
   `diff <https://github.com/giampaolo/psutil/compare/release-5.7.3...release-5.8.0#files_bucket>`__
-- 2020-10-23:
+- 2020-10-24:
   `5.7.3 <https://pypi.org/project/psutil/5.7.3/#files>`__ -
   `what's new <https://github.com/giampaolo/psutil/blob/master/HISTORY.rst#573>`__ -
   `diff <https://github.com/giampaolo/psutil/compare/release-5.7.2...release-5.7.3#files_bucket>`__
@@ -2714,7 +2733,7 @@ Timeline
   `5.4.6 <https://pypi.org/project/psutil/5.4.6/#files>`__ -
   `what's new <https://github.com/giampaolo/psutil/blob/master/HISTORY.rst#546>`__ -
   `diff <https://github.com/giampaolo/psutil/compare/release-5.4.5...release-5.4.6#files_bucket>`__
-- 2018-04-14:
+- 2018-04-13:
   `5.4.5 <https://pypi.org/project/psutil/5.4.5/#files>`__ -
   `what's new <https://github.com/giampaolo/psutil/blob/master/HISTORY.rst#545>`__ -
   `diff <https://github.com/giampaolo/psutil/compare/release-5.4.4...release-5.4.5#files_bucket>`__
@@ -2740,7 +2759,7 @@ Timeline
   `diff <https://github.com/giampaolo/psutil/compare/release-5.3.1...release-5.4.0#files_bucket>`__
 - 2017-09-10:
   `5.3.1 <https://pypi.org/project/psutil/5.3.1/#files>`__ -
-  `what's new <https://github.com/giampaolo/psutil/blob/master/HISTORY.rst#530>`__ -
+  `what's new <https://github.com/giampaolo/psutil/blob/master/HISTORY.rst#531>`__ -
   `diff <https://github.com/giampaolo/psutil/compare/release-5.3.0...release-5.3.1#files_bucket>`__
 - 2017-09-01:
   `5.3.0 <https://pypi.org/project/psutil/5.3.0/#files>`__ -

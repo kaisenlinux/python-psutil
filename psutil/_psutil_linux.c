@@ -78,10 +78,16 @@ ioprio_set(int which, int who, int ioprio) {
     return syscall(__NR_ioprio_set, which, who, ioprio);
 }
 
-// defined in linux/ethtool.h but not always available (e.g. Android)
+// * defined in linux/ethtool.h but not always available (e.g. Android)
+// * #ifdef check needed for old kernels, see:
+//   https://github.com/giampaolo/psutil/issues/2164
 static inline uint32_t
 psutil_ethtool_cmd_speed(const struct ethtool_cmd *ecmd) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 27)
+    return ecmd->speed;
+#else
     return (ecmd->speed_hi << 16) | ecmd->speed;
+#endif
 }
 
 #define IOPRIO_CLASS_SHIFT 13
@@ -308,7 +314,14 @@ psutil_proc_cpu_affinity_set(PyObject *self, PyObject *args) {
         return NULL;
 
     if (!PySequence_Check(py_cpu_set)) {
-        return PyErr_Format(PyExc_TypeError, "sequence argument expected, got %R", Py_TYPE(py_cpu_set));
+        return PyErr_Format(
+            PyExc_TypeError,
+#if PY_MAJOR_VERSION >= 3
+            "sequence argument expected, got %R", Py_TYPE(py_cpu_set)
+#else
+            "sequence argument expected, got %s", Py_TYPE(py_cpu_set)->tp_name
+#endif
+        );
     }
 
     seq_len = PySequence_Size(py_cpu_set);
@@ -379,11 +392,11 @@ psutil_users(PyObject *self, PyObject *args) {
             goto error;
 
         py_tuple = Py_BuildValue(
-            "OOOfO" _Py_PARSE_PID,
+            "OOOdO" _Py_PARSE_PID,
             py_username,              // username
             py_tty,                   // tty
             py_hostname,              // hostname
-            (float)ut->ut_tv.tv_sec,  // tstamp
+            (double)ut->ut_tv.tv_sec,  // tstamp
             py_user_proc,             // (bool) user process
             ut->ut_pid                // process id
         );

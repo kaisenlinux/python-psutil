@@ -1,27 +1,13 @@
-From: Sandro Tosi <morph@debian.org>
-Date: Sun, 10 Apr 2016 13:17:47 +0100
-Subject: pass PYTHONPATH to the test runner
+Author: Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>
 
----
- Makefile | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/Makefile
-+++ b/Makefile
-@@ -4,6 +4,7 @@
- 
- # Configurable.
- PYTHON = python3
-+PYTHONPATH = .
- ARGS =
- TSCRIPT = psutil/tests/runner.py
- 
-@@ -45,7 +46,7 @@ BUILD_OPTS = `$(PYTHON) -c \
+--- python-psutil-5.9.5.orig/Makefile
++++ python-psutil-5.9.5/Makefile
+@@ -47,7 +47,7 @@ BUILD_OPTS = `$(PYTHON) -c \
  # In not in a virtualenv, add --user options for install commands.
  INSTALL_OPTS = `$(PYTHON) -c \
  	"import sys; print('' if hasattr(sys, 'real_prefix') or hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix else '--user')"`
--TEST_PREFIX = PYTHONWARNINGS=always PSUTIL_DEBUG=1
-+TEST_PREFIX = PYTHONWARNINGS=always PSUTIL_DEBUG=1 PYTHONPATH=$(PYTHONPATH)
+-TEST_PREFIX = PSUTIL_SCRIPTS_DIR=`pwd`/scripts PYTHONWARNINGS=always PSUTIL_DEBUG=1
++TEST_PREFIX = PSUTIL_SCRIPTS_DIR=`pwd`/scripts PYTHONWARNINGS=always PSUTIL_DEBUG=1 PYTHONPATH=$(PYTHONPATH)
  
  # if make is invoked with no arg, default to `make help`
  .DEFAULT_GOAL := help

@@ -109,6 +109,8 @@ def get_version():
 VERSION = get_version()
 macros.append(('PSUTIL_VERSION', int(VERSION.replace('.', ''))))
 
+# Py_LIMITED_API lets us create a single wheel which works with multiple
+# python versions, including unreleased ones.
 if bdist_wheel and CP36_PLUS and (MACOS or LINUX or WINDOWS):
     py_limited_api = {"py_limited_api": True}
     macros.append(('Py_LIMITED_API', '0x03060000'))
@@ -116,18 +118,16 @@ else:
     py_limited_api = {}
 
 
-def get_description():
+def get_long_description():
     script = os.path.join(HERE, "scripts", "internal", "convert_readme.py")
     readme = os.path.join(HERE, 'README.rst')
     p = subprocess.Popen([sys.executable, script, readme],
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         universal_newlines=True)
     stdout, stderr = p.communicate()
     if p.returncode != 0:
         raise RuntimeError(stderr)
-    data = stdout.decode('utf8')
-    if WINDOWS:
-        data = data.replace('\r\n', '\n')
-    return data
+    return stdout
 
 
 @contextlib.contextmanager
@@ -147,11 +147,41 @@ def silenced_output(stream_name):
         setattr(sys, stream_name, orig)
 
 
-def missdeps(msg):
-    s = hilite("C compiler or Python headers are not installed ", color="red")
-    s += hilite("on this system. Try to run:\n", color="red")
-    s += hilite(msg, color="red", bold=True)
-    print(s, file=sys.stderr)
+def missdeps(cmdline):
+    s = "psutil could not be installed from sources"
+    if not SUNOS and not which("gcc"):
+        s += " because gcc is not installed. "
+    else:
+        s += ". Perhaps Python header files are not installed. "
+    s += "Try running:\n"
+    s += "  %s" % cmdline
+    print(hilite(s, color="red", bold=True), file=sys.stderr)
+
+
+def unix_can_compile(c_code):
+    from distutils.errors import CompileError
+    from distutils.unixccompiler import UnixCCompiler
+
+    with tempfile.NamedTemporaryFile(
+            suffix='.c', delete=False, mode="wt") as f:
+        f.write(c_code)
+
+    tempdir = tempfile.mkdtemp()
+    try:
+        compiler = UnixCCompiler()
+        # https://github.com/giampaolo/psutil/pull/1568
+        if os.getenv('CC'):
+            compiler.set_executable('compiler_so', os.getenv('CC'))
+        with silenced_output('stderr'):
+            with silenced_output('stdout'):
+                compiler.compile([f.name], output_dir=tempdir)
+    except CompileError:
+        return False
+    else:
+        return True
+    finally:
+        os.remove(f.name)
+        shutil.rmtree(tempdir)
 
 
 if WINDOWS:
@@ -184,6 +214,7 @@ if WINDOWS:
             'psutil/arch/windows/process_info.c',
             'psutil/arch/windows/process_handles.c',
             'psutil/arch/windows/disk.c',
+            'psutil/arch/windows/mem.c',
             'psutil/arch/windows/net.c',
             'psutil/arch/windows/cpu.c',
             'psutil/arch/windows/security.c',
@@ -244,6 +275,7 @@ elif OPENBSD:
             'psutil/arch/openbsd/disk.c',
             'psutil/arch/openbsd/mem.c',
             'psutil/arch/openbsd/proc.c',
+            'psutil/arch/openbsd/socks.c',
         ],
         define_macros=macros,
         libraries=["kvm"],
@@ -255,7 +287,10 @@ elif NETBSD:
         'psutil._psutil_bsd',
         sources=sources + [
             'psutil/_psutil_bsd.c',
-            'psutil/arch/netbsd/specific.c',
+            'psutil/arch/netbsd/cpu.c',
+            'psutil/arch/netbsd/disk.c',
+            'psutil/arch/netbsd/mem.c',
+            'psutil/arch/netbsd/proc.c',
             'psutil/arch/netbsd/socks.c',
         ],
         define_macros=macros,
@@ -263,36 +298,11 @@ elif NETBSD:
         **py_limited_api)
 
 elif LINUX:
-    def get_ethtool_macro():
-        # see: https://github.com/giampaolo/psutil/issues/659
-        from distutils.errors import CompileError
-        from distutils.unixccompiler import UnixCCompiler
-
-        with tempfile.NamedTemporaryFile(
-                suffix='.c', delete=False, mode="wt") as f:
-            f.write("#include <linux/ethtool.h>")
-
-        output_dir = tempfile.mkdtemp()
-        try:
-            compiler = UnixCCompiler()
-            # https://github.com/giampaolo/psutil/pull/1568
-            if os.getenv('CC'):
-                compiler.set_executable('compiler_so', os.getenv('CC'))
-            with silenced_output('stderr'):
-                with silenced_output('stdout'):
-                    compiler.compile([f.name], output_dir=output_dir)
-        except CompileError:
-            return ("PSUTIL_ETHTOOL_MISSING_TYPES", 1)
-        else:
-            return None
-        finally:
-            os.remove(f.name)
-            shutil.rmtree(output_dir)
+    # see: https://github.com/giampaolo/psutil/issues/659
+    if not unix_can_compile("#include <linux/ethtool.h>"):
+        macros.append(("PSUTIL_ETHTOOL_MISSING_TYPES", 1))
 
     macros.append(("PSUTIL_LINUX", 1))
-    ETHTOOL_MACRO = get_ethtool_macro()
-    if ETHTOOL_MACRO is not None:
-        macros.append(ETHTOOL_MACRO)
     ext = Extension(
         'psutil._psutil_linux',
         sources=sources + ['psutil/_psutil_linux.c'],
@@ -341,10 +351,7 @@ if POSIX:
             # for an explanation of Solaris /etc/release
             with open('/etc/release') as f:
                 update = re.search(r'(?<=s10s_u)[0-9]{1,2}', f.readline())
-                if update is None:
-                    return 0
-                else:
-                    return int(update.group(0))
+                return int(update.group(0)) if update else 0
 
         posix_extension.libraries.append('socket')
         if platform.release() == '5.10':
@@ -381,7 +388,7 @@ def main():
         version=VERSION,
         cmdclass=cmdclass,
         description=__doc__ .replace('\n', ' ').strip() if __doc__ else '',
-        long_description=get_description(),
+        long_description=get_long_description(),
         long_description_content_type='text/x-rst',
         keywords=[
             'ps', 'top', 'kill', 'free', 'lsof', 'netstat', 'nice', 'tty',
@@ -455,13 +462,20 @@ def main():
         setup(**kwargs)
         success = True
     finally:
-        if not success and POSIX and not which('gcc'):
+        cmd = sys.argv[1] if len(sys.argv) >= 2 else ''
+        if not success and POSIX and \
+                cmd.startswith(("build", "install", "sdist", "bdist",
+                                "develop")):
             py3 = "3" if PY3 else ""
             if LINUX:
+                pyimpl = "pypy" if PYPY else "python"
                 if which('dpkg'):
-                    missdeps("sudo apt-get install gcc python%s-dev" % py3)
+                    missdeps("sudo apt-get install gcc %s%s-dev" %
+                             (pyimpl, py3))
                 elif which('rpm'):
-                    missdeps("sudo yum install gcc python%s-devel" % py3)
+                    missdeps("sudo yum install gcc %s%s-devel" % (pyimpl, py3))
+                elif which('apk'):
+                    missdeps("sudo apk add gcc %s%s-dev" % (pyimpl, py3))
             elif MACOS:
                 print(hilite("XCode (https://developer.apple.com/xcode/) "
                              "is not installed"), color="red", file=sys.stderr)
