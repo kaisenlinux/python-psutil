@@ -4,8 +4,7 @@
 # All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-"""
-Checks for broken links in file names specified as command line
+"""Checks for broken links in file names specified as command line
 parameters.
 
 There are a ton of a solutions available for validating URLs in string
@@ -25,7 +24,7 @@ Method:
   Handles redirects, http, https, ftp as well.
 
 REFERENCES:
-Using [1] with some modificatons for including ftp
+Using [1] with some modifications for including ftp
 [1] http://stackoverflow.com/a/6883094/5163807
 [2] http://stackoverflow.com/a/31952097/5163807
 [3] http://daringfireball.net/2010/07/improved_regex_for_matching_urls
@@ -161,7 +160,7 @@ def parse_c(fname):
 
 
 def parse_generic(fname):
-    with open(fname, 'rt', errors='ignore') as f:
+    with open(fname, errors='ignore') as f:
         text = f.read()
     return find_urls(text)
 
@@ -172,10 +171,10 @@ def get_urls(fname):
         return parse_rst(fname)
     elif fname.endswith('.py'):
         return parse_py(fname)
-    elif fname.endswith('.c') or fname.endswith('.h'):
+    elif fname.endswith(('.c', '.h')):
         return parse_c(fname)
     else:
-        with open(fname, 'rt', errors='ignore') as f:
+        with open(fname, errors='ignore') as f:
             if f.readline().strip().startswith('#!/usr/bin/env python3'):
                 return parse_py(fname)
         return parse_generic(fname)
@@ -198,8 +197,8 @@ def validate_url(url):
 
 
 def parallel_validator(urls):
-    """validates all urls in parallel
-    urls: tuple(filename, url)
+    """Validates all urls in parallel
+    urls: tuple(filename, url).
     """
     fails = []  # list of tuples (filename, url)
     current = 0

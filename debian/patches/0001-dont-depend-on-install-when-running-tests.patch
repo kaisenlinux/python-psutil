@@ -1,8 +1,8 @@
 Author: Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>
 
---- python-psutil-5.9.5.orig/Makefile
-+++ python-psutil-5.9.5/Makefile
-@@ -127,59 +127,59 @@ setup-dev-env:  ## Install GIT hooks, pi
+--- python-psutil-5.9.6.orig/Makefile
++++ python-psutil-5.9.6/Makefile
+@@ -126,59 +126,59 @@ setup-dev-env:  ## Install GIT hooks, pi
  # ===================================================================
  
  test:  ## Run all tests. To run a specific test do "make test ARGS=psutil.tests.test_system.TestDiskAPIs"
@@ -65,7 +65,7 @@ Author: Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>
 +#	${MAKE} build
  	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_memleaks.py
  
- test-failed:  ## Re-run tests which failed on last run
+ test-last-failed:  ## Re-run tests which failed on last run
 -	${MAKE} build
 +#	${MAKE} build
  	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) --last-failed

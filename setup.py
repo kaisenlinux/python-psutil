@@ -8,7 +8,9 @@
 
 from __future__ import print_function
 
+import ast
 import contextlib
+import glob
 import io
 import os
 import platform
@@ -60,7 +62,9 @@ from _compat import which  # NOQA
 
 PYPY = '__pypy__' in sys.builtin_module_names
 PY36_PLUS = sys.version_info[:2] >= (3, 6)
+PY37_PLUS = sys.version_info[:2] >= (3, 7)
 CP36_PLUS = PY36_PLUS and sys.implementation.name == "cpython"
+CP37_PLUS = PY37_PLUS and sys.implementation.name == "cpython"
 
 macros = []
 if POSIX:
@@ -95,10 +99,10 @@ if not PYPY:
 
 def get_version():
     INIT = os.path.join(HERE, 'psutil/__init__.py')
-    with open(INIT, 'r') as f:
+    with open(INIT) as f:
         for line in f:
             if line.startswith('__version__'):
-                ret = eval(line.strip().split(' = ')[1])
+                ret = ast.literal_eval(line.strip().split(' = ')[1])
                 assert ret.count('.') == 2, ret
                 for num in ret.split('.'):
                     assert num.isdigit(), ret
@@ -111,9 +115,14 @@ macros.append(('PSUTIL_VERSION', int(VERSION.replace('.', ''))))
 
 # Py_LIMITED_API lets us create a single wheel which works with multiple
 # python versions, including unreleased ones.
-if bdist_wheel and CP36_PLUS and (MACOS or LINUX or WINDOWS):
+if bdist_wheel and CP36_PLUS and (MACOS or LINUX):
     py_limited_api = {"py_limited_api": True}
     macros.append(('Py_LIMITED_API', '0x03060000'))
+elif bdist_wheel and CP37_PLUS and WINDOWS:
+    # PyErr_SetFromWindowsErr / PyErr_SetFromWindowsErrWithFilename are
+    # part of the stable API/ABI starting with CPython 3.7
+    py_limited_api = {"py_limited_api": True}
+    macros.append(('Py_LIMITED_API', '0x03070000'))
 else:
     py_limited_api = {}
 
@@ -208,20 +217,11 @@ if WINDOWS:
 
     ext = Extension(
         'psutil._psutil_windows',
-        sources=sources + [
-            'psutil/_psutil_windows.c',
-            'psutil/arch/windows/process_utils.c',
-            'psutil/arch/windows/process_info.c',
-            'psutil/arch/windows/process_handles.c',
-            'psutil/arch/windows/disk.c',
-            'psutil/arch/windows/mem.c',
-            'psutil/arch/windows/net.c',
-            'psutil/arch/windows/cpu.c',
-            'psutil/arch/windows/security.c',
-            'psutil/arch/windows/services.c',
-            'psutil/arch/windows/socks.c',
-            'psutil/arch/windows/wmi.c',
-        ],
+        sources=(
+            sources +
+            ["psutil/_psutil_windows.c"] +
+            glob.glob("psutil/arch/windows/*.c")
+        ),
         define_macros=macros,
         libraries=[
             "psapi", "kernel32", "advapi32", "shell32", "netapi32",
@@ -236,11 +236,11 @@ elif MACOS:
     macros.append(("PSUTIL_OSX", 1))
     ext = Extension(
         'psutil._psutil_osx',
-        sources=sources + [
-            'psutil/_psutil_osx.c',
-            'psutil/arch/osx/process_info.c',
-            'psutil/arch/osx/cpu.c',
-        ],
+        sources=(
+            sources +
+            ["psutil/_psutil_osx.c"] +
+            glob.glob("psutil/arch/osx/*.c")
+        ),
         define_macros=macros,
         extra_link_args=[
             '-framework', 'CoreFoundation', '-framework', 'IOKit'
@@ -251,16 +251,12 @@ elif FREEBSD:
     macros.append(("PSUTIL_FREEBSD", 1))
     ext = Extension(
         'psutil._psutil_bsd',
-        sources=sources + [
-            'psutil/_psutil_bsd.c',
-            'psutil/arch/freebsd/cpu.c',
-            'psutil/arch/freebsd/mem.c',
-            'psutil/arch/freebsd/disk.c',
-            'psutil/arch/freebsd/sensors.c',
-            'psutil/arch/freebsd/proc.c',
-            'psutil/arch/freebsd/sys_socks.c',
-            'psutil/arch/freebsd/proc_socks.c',
-        ],
+        sources=(
+            sources +
+            ["psutil/_psutil_bsd.c"] +
+            glob.glob("psutil/arch/bsd/*.c") +
+            glob.glob("psutil/arch/freebsd/*.c")
+        ),
         define_macros=macros,
         libraries=["devstat"],
         **py_limited_api)
@@ -269,14 +265,12 @@ elif OPENBSD:
     macros.append(("PSUTIL_OPENBSD", 1))
     ext = Extension(
         'psutil._psutil_bsd',
-        sources=sources + [
-            'psutil/_psutil_bsd.c',
-            'psutil/arch/openbsd/cpu.c',
-            'psutil/arch/openbsd/disk.c',
-            'psutil/arch/openbsd/mem.c',
-            'psutil/arch/openbsd/proc.c',
-            'psutil/arch/openbsd/socks.c',
-        ],
+        sources=(
+            sources +
+            ["psutil/_psutil_bsd.c"] +
+            glob.glob("psutil/arch/bsd/*.c") +
+            glob.glob("psutil/arch/openbsd/*.c")
+        ),
         define_macros=macros,
         libraries=["kvm"],
         **py_limited_api)
@@ -285,14 +279,12 @@ elif NETBSD:
     macros.append(("PSUTIL_NETBSD", 1))
     ext = Extension(
         'psutil._psutil_bsd',
-        sources=sources + [
-            'psutil/_psutil_bsd.c',
-            'psutil/arch/netbsd/cpu.c',
-            'psutil/arch/netbsd/disk.c',
-            'psutil/arch/netbsd/mem.c',
-            'psutil/arch/netbsd/proc.c',
-            'psutil/arch/netbsd/socks.c',
-        ],
+        sources=(
+            sources +
+            ["psutil/_psutil_bsd.c"] +
+            glob.glob("psutil/arch/bsd/*.c") +
+            glob.glob("psutil/arch/netbsd/*.c")
+        ),
         define_macros=macros,
         libraries=["kvm"],
         **py_limited_api)
@@ -453,7 +445,8 @@ def main():
     )
     if setuptools is not None:
         kwargs.update(
-            python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
+            python_requires=(
+                ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"),
             extras_require=extras_require,
             zip_safe=False,
         )
@@ -478,7 +471,7 @@ def main():
                     missdeps("sudo apk add gcc %s%s-dev" % (pyimpl, py3))
             elif MACOS:
                 print(hilite("XCode (https://developer.apple.com/xcode/) "
-                             "is not installed"), color="red", file=sys.stderr)
+                             "is not installed", color="red"), file=sys.stderr)
             elif FREEBSD:
                 if which('pkg'):
                     missdeps("pkg install gcc python%s" % py3)

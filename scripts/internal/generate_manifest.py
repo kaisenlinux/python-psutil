@@ -4,11 +4,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""
-Generate MANIFEST.in file.
-"""
+"""Generate MANIFEST.in file."""
 
 import os
+import shlex
 import subprocess
 
 
@@ -19,16 +18,19 @@ SKIP_PREFIXES = ('.ci/', '.github/')
 
 def sh(cmd):
     return subprocess.check_output(
-        cmd, shell=True, universal_newlines=True).strip()
+        shlex.split(cmd), universal_newlines=True).strip()
 
 
 def main():
-    files = sh("git ls-files").split('\n')
-    for file in files:
+    files = set()
+    for file in sh("git ls-files").split('\n'):
         if file.startswith(SKIP_PREFIXES) or \
                 os.path.splitext(file)[1].lower() in SKIP_EXTS or \
                 file in SKIP_FILES:
             continue
+        files.add(file)
+
+    for file in sorted(files):
         print("include " + file)
 
 

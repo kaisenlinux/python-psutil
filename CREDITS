@@ -85,7 +85,7 @@ I: 18
 N: Thomas Klausner
 W: https://github.com/0-wiz-0
 D: NetBSD implementation (co-author).
-I: 557, 2128
+I: 557, 2128, 2241
 
 N: Ryo Onodera
 W: https://github.com/ryoon
@@ -765,7 +765,7 @@ I: 1598
 
 N: Xuehai Pan
 W: https://github.com/XuehaiPan
-I: 1948
+I: 1948, 2264
 
 N: Saeed Rasooli
 W: https://github.com/ilius
@@ -781,7 +781,7 @@ I: 1956
 
 N: Matthieu Darbois
 W: https://github.com/mayeut
-I: 2039, 2142, 2147, 2153, 2040, 2102, 2216
+I: 2039, 2142, 2147, 2153, 2040, 2102, 2216, 2246, 2252
 
 N: Hugo van Kemenade
 W: https://github.com/hugovk
