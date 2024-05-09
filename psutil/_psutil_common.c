@@ -20,7 +20,7 @@ int PSUTIL_DEBUG = 0;
 // --- Backward compatibility with missing Python.h APIs
 // ====================================================================
 
-// PyPy on Windows
+// PyPy on Windows. Missing APIs added in PyPy 7.3.14.
 #if defined(PSUTIL_WINDOWS) && defined(PYPY_VERSION)
 #if !defined(PyErr_SetFromWindowsErrWithFilename)
 PyObject *
@@ -56,6 +56,18 @@ error:
     return NULL;
 }
 #endif  // !defined(PyErr_SetFromWindowsErrWithFilename)
+
+
+#if !defined(PyErr_SetExcFromWindowsErrWithFilenameObject)
+PyObject *
+PyErr_SetExcFromWindowsErrWithFilenameObject(PyObject *type,
+                                             int ierr,
+                                             PyObject *filename) {
+    // Original function is too complex. Just raise OSError without
+    // filename.
+    return PyErr_SetFromWindowsErrWithFilename(ierr, NULL);
+}
+#endif // !defined(PyErr_SetExcFromWindowsErrWithFilenameObject)
 
 
 // PyPy 2.7

@@ -1,5 +1,45 @@
 *Bug tracker at https://github.com/giampaolo/psutil/issues*
 
+5.9.8
+=====
+
+2024-01-19
+
+**Enhancements**
+
+- 2343_, [FreeBSD]: filter `net_connections()`_ returned list in C instead of
+  Python, and avoid to retrieve unnecessary connection types unless explicitly
+  asked. E.g., on an IDLE system with few IPv6 connections this will run around
+  4 times faster. Before all connection types (TCP, UDP, UNIX) were retrieved
+  internally, even if only a portion was returned.
+- 2342_, [NetBSD]: same as above (#2343) but for NetBSD.
+- 2349_: adopted black formatting style.
+
+**Bug fixes**
+
+- 930_, [NetBSD], [critical]: `net_connections()`_ implementation was broken.
+  It could either leak memory or core dump.
+- 2340_, [NetBSD]: if process is terminated, `Process.cwd()`_ will return an
+  empty string instead of raising `NoSuchProcess`_.
+- 2345_, [Linux]: fix compilation on older compiler missing DUPLEX_UNKNOWN.
+- 2222_, [macOS]: `cpu_freq()` now returns fixed values for `min` and `max`
+  frequencies in all Apple Silicon chips.
+
+5.9.7
+=====
+
+2023-12-17
+
+**Enhancements**
+
+- 2324_: enforce Ruff rule `raw-string-in-exception`, which helps providing
+  clearer tracebacks when exceptions are raised by psutil.
+
+**Bug fixes**
+
+- 2325_, [PyPy]: psutil did not compile on PyPy due to missing
+  `PyErr_SetExcFromWindowsErrWithFilenameObject` cPython API.
+
 5.9.6
 =====
 

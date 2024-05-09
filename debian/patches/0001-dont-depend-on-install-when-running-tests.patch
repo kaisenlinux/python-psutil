@@ -1,8 +1,8 @@
 Author: Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>
 
---- python-psutil-5.9.6.orig/Makefile
-+++ python-psutil-5.9.6/Makefile
-@@ -126,59 +126,59 @@ setup-dev-env:  ## Install GIT hooks, pi
+--- python-psutil-5.9.8.orig/Makefile
++++ python-psutil-5.9.8/Makefile
+@@ -129,63 +129,63 @@ setup-dev-env:  ## Install GIT hooks, pi
  # ===================================================================
  
  test:  ## Run all tests. To run a specific test do "make test ARGS=psutil.tests.test_system.TestDiskAPIs"
@@ -19,6 +19,11 @@ Author: Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>
 -	${MAKE} build
 +#	${MAKE} build
  	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_process.py
+ 
+ test-process-all:  ## Run tests which iterate over all process PIDs.
+-	${MAKE} build
++#	${MAKE} build
+ 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_process_all.py
  
  test-system:  ## Run system-related API tests.
 -	${MAKE} build

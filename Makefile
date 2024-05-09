@@ -9,14 +9,17 @@ TSCRIPT = psutil/tests/runner.py
 
 # Internal.
 PY3_DEPS = \
+	black \
 	check-manifest \
 	concurrencytest \
 	coverage \
+	packaging \
 	pylint \
 	pyperf \
 	pypinfo \
 	requests \
 	rstcheck \
+	ruff \
 	setuptools \
 	sphinx_rtd_theme \
 	teyit \
@@ -137,6 +140,10 @@ test-process:  ## Run process-related API tests.
 	${MAKE} build
 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_process.py
 
+test-process-all:  ## Run tests which iterate over all process PIDs.
+	${MAKE} build
+	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_process_all.py
+
 test-system:  ## Run system-related API tests.
 	${MAKE} build
 	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS) psutil/tests/test_system.py
@@ -192,7 +199,10 @@ test-coverage:  ## Run test coverage.
 # ===================================================================
 
 ruff:  ## Run ruff linter.
-	@git ls-files '*.py' | xargs $(PYTHON) -m ruff check --config=pyproject.toml --no-cache
+	@git ls-files '*.py' | xargs $(PYTHON) -m ruff check --no-cache
+
+black:  ## Python files linting (via black)
+	@git ls-files '*.py' | xargs $(PYTHON) -m black --check --safe
 
 _pylint:  ## Python pylint (not mandatory, just run it from time to time)
 	@git ls-files '*.py' | xargs $(PYTHON) -m pylint --rcfile=pyproject.toml --jobs=${NUM_WORKERS}
@@ -207,6 +217,7 @@ lint-toml:  ## Linter for pyproject.toml
 	@git ls-files '*.toml' | xargs toml-sort --check
 
 lint-all:  ## Run all linters
+	${MAKE} black
 	${MAKE} ruff
 	${MAKE} lint-c
 	${MAKE} lint-rst
@@ -216,8 +227,11 @@ lint-all:  ## Run all linters
 # Fixers
 # ===================================================================
 
+fix-black:
+	git ls-files '*.py' | xargs $(PYTHON) -m black
+
 fix-ruff:
-	@git ls-files '*.py' | xargs $(PYTHON) -m ruff --config=pyproject.toml --no-cache --fix
+	@git ls-files '*.py' | xargs $(PYTHON) -m ruff --no-cache --fix
 
 fix-unittests:  ## Fix unittest idioms.
 	@git ls-files '*test_*.py' | xargs $(PYTHON) -m teyit --show-stats
@@ -227,6 +241,7 @@ fix-toml:  ## Fix pyproject.toml
 
 fix-all:  ## Run all code fixers.
 	${MAKE} fix-ruff
+	${MAKE} fix-black
 	${MAKE} fix-unittests
 	${MAKE} fix-toml
 
@@ -269,11 +284,13 @@ pre-release:  ## Check if we're ready to produce a new release.
 	${MAKE} sdist
 	${MAKE} check-sdist
 	${MAKE} install
-	${MAKE} download-wheels-github
-	${MAKE} download-wheels-appveyor
-	${MAKE} check-wheels
-	${MAKE} print-hashes
-	${MAKE} print-dist
+	$(PYTHON) -c \
+		"import requests, sys; \
+		from packaging.version import parse; \
+		from psutil import __version__; \
+		res = requests.get('https://pypi.org/pypi/psutil/json', timeout=5); \
+		versions = sorted(res.json()['releases'], key=parse, reverse=True); \
+		sys.exit('version %r already exists on PYPI' % __version__) if __version__ in versions else 0"
 	$(PYTHON) -c \
 		"from psutil import __version__ as ver; \
 		doc = open('docs/index.rst').read(); \
@@ -281,6 +298,11 @@ pre-release:  ## Check if we're ready to produce a new release.
 		assert ver in doc, '%r not in docs/index.rst' % ver; \
 		assert ver in history, '%r not in HISTORY.rst' % ver; \
 		assert 'XXXX' not in history, 'XXXX in HISTORY.rst';"
+	${MAKE} download-wheels-github
+	${MAKE} download-wheels-appveyor
+	${MAKE} check-wheels
+	${MAKE} print-hashes
+	${MAKE} print-dist
 
 release:  ## Upload a new release.
 	${MAKE} check-sdist

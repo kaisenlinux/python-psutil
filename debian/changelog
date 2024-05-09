@@ -1,3 +1,9 @@
+python-psutil (5.9.8-1kaisen) kaisen-packages; urgency=medium
+
+  * Import the 5.9.8 version
+
+ -- Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>  Thu, 09 May 2024 14:20:36 +0200
+
 python-psutil (5.9.6-1kaisen) kaisen-packages; urgency=medium
 
   * Import the 5.9.6 version
