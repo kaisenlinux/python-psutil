@@ -49,6 +49,7 @@ def sh(cmd):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         universal_newlines=True,
+        env=env,
     )
     stdout, stderr = p.communicate()
     if p.returncode != 0:
@@ -141,7 +142,7 @@ def main():
     downs = downloads()
 
     print("# Download stats")
-    print("")
+    print()
     s = "psutil download statistics of the last %s days (last update " % DAYS
     s += "*%s*).\n" % LAST_UPDATE
     s += "Generated via [pypistats.py](%s) script.\n" % GITHUB_SCRIPT_URL

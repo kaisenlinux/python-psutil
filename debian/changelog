@@ -1,3 +1,11 @@
+python-psutil (6.1.1-1kaisen) kaisen-packages; urgency=medium
+
+  * Import the 6.1.1 version
+  * Update the 0001-dont-depend-on-install-when-running-tests.patch
+  * Drop the 0002-pass-PYTHONPATH-to-the-test-runner.patch
+
+ -- Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>  Tue, 14 Jan 2025 00:09:13 +0200
+
 python-psutil (5.9.8-1kaisen) kaisen-packages; urgency=medium
 
   * Import the 5.9.8 version
